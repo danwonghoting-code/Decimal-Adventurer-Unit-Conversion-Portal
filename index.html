@@ -2,22 +2,26 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小數冒險家：自由傳送修正版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>小數冒險家：細節優化版</title>
     <style>
         :root {
             --gold: #FFD700;
             --magic-blue: #1a2a6c;
             --magic-glow: #00d2ff;
-            --scroll-bg: rgba(244, 228, 188, 0.95);
+            --scroll-bg: rgba(255, 255, 255, 0.9);
             --danger: #ff4757;
             --text-dark: #2d3436;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
             margin: 0; padding: 0;
             font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif;
             background-color: #000;
-            height: 100vh; overflow: hidden;
+            height: 100dvh; 
+            overflow: hidden;
             display: flex; flex-direction: column; align-items: center;
             transition: background 0.8s ease-in-out;
         }
@@ -30,70 +34,100 @@
         .bg-island-3 { background: url('Gemini_Generated_Image_qwllskqwllskqwll.png') no-repeat center center/cover; }
         .bg-island-4 { background: url('Gemini_Generated_Image_46lexo46lexo46le.png') no-repeat center center/cover; }
 
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
+        .screen { 
+            display: none; width: 100%; height: 100%; 
+            flex-direction: column; align-items: center; 
+            padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px;
+        }
         .active-screen { display: flex; }
 
-        #home-screen { justify-content: center; background: rgba(0,0,0,0.4); }
-        .home-title { font-size: 42px; color: var(--gold); text-shadow: 2px 2px 15px black; margin-bottom: 40px; text-align: center; font-weight: bold; }
-        .island-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 600px; padding: 20px; }
-        .big-island-btn {
-            background: rgba(255, 255, 255, 0.85); color: var(--text-dark); border: 4px solid var(--gold);
-            padding: 25px; border-radius: 20px; font-size: 22px; font-weight: bold;
-            cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
+        #home-screen { justify-content: center; background: rgba(0,0,0,0.3); }
+        .home-title { font-size: clamp(24px, 8vw, 42px); color: var(--gold); text-shadow: 2px 2px 15px black; margin-bottom: 30px; text-align: center; font-weight: bold; }
+        .island-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; max-width: 500px; padding: 10px; }
+        .big-island-btn { background: rgba(255, 255, 255, 0.9); color: var(--text-dark); border: 3px solid var(--gold); padding: 20px 10px; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
-        .nav-bar { width: 100%; display: flex; background: rgba(0,0,0,0.8); padding: 10px; gap: 8px; justify-content: center; flex-wrap: wrap; z-index: 100; }
-        .nav-btn { padding: 8px 15px; border-radius: 12px; background: #333; color: white; border: 1px solid var(--gold); font-size: 14px; cursor: pointer; transition: 0.3s; }
-        .nav-btn:hover { background: #444; transform: translateY(-2px); }
-        .nav-btn.active { background: var(--magic-blue); box-shadow: 0 0 12px var(--magic-glow); border-color: var(--magic-glow); }
+        .nav-bar { width: 100%; display: flex; background: rgba(0,0,0,0.85); padding: 8px 5px; gap: 5px; justify-content: center; flex-wrap: wrap; }
+        .nav-btn { padding: 6px 10px; border-radius: 8px; background: #333; color: white; border: 1px solid var(--gold); font-size: clamp(10px, 3vw, 14px); cursor: pointer; }
+        .nav-btn.active { background: var(--magic-blue); border-color: var(--magic-glow); box-shadow: 0 0 8px var(--magic-glow); }
 
-        .info-bar { display: flex; justify-content: space-between; width: 92%; max-width: 600px; padding: 10px 0; color: white; align-items: center; text-shadow: 1px 1px 5px black; }
-        .stat-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; border: 1px solid var(--gold); font-family: monospace; font-size: 20px; }
-        .score-display { color: var(--gold); font-weight: bold; }
+        .info-bar { display: flex; justify-content: space-between; width: 100%; max-width: 650px; padding: 10px 5px; color: white; align-items: center; text-shadow: 1px 1px 5px black; }
+        .stat-box { background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--gold); font-family: monospace; font-size: 16px; }
 
         .game-main {
-            background: var(--scroll-bg); width: 92%; max-width: 650px;
-            padding: 35px 20px; border-radius: 25px; box-shadow: 0 15px 50px rgba(0,0,0,0.8);
-            display: flex; flex-direction: column; align-items: center; color: var(--text-dark); border: 5px solid var(--gold);
+            background: var(--scroll-bg); width: 100%; max-width: 650px;
+            padding: 20px 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; color: var(--text-dark);
+            border: 4px solid var(--gold); position: relative; margin-bottom: 10px;
         }
 
-        .quest-area { font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; }
-        .quest-arrow { font-size: 40px; animation: bounceSide 1s infinite; display: inline-block; }
+        .quest-area { font-size: clamp(20px, 5vw, 28px); font-weight: 800; text-align: center; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
 
-        .number-line { display: flex; align-items: center; font-size: 55px; font-weight: bold; margin: 20px 0; min-height: 90px; }
-        .slot { width: 18px; height: 50px; background: rgba(0,0,0,0.1); margin: 0 5px; border-radius: 5px; cursor: pointer; }
-        .decimal-point { width: 36px; height: 36px; background: var(--danger); border-radius: 50%; box-shadow: 0 0 15px var(--danger); z-index: 10; cursor: pointer;}
-        .digit { display: inline-block; width: 42px; text-align: center; }
-        .digit.ghost { color: rgba(0, 0, 0, 0.1); }
-        .digit.solid { color: #000; }
-
-        .dialog-box { background: rgba(255, 255, 255, 0.9); width: 100%; padding: 18px; border-radius: 12px; border: 2px solid var(--text-dark); min-height: 80px; font-size: 18px; color: #333; margin-bottom: 20px; box-sizing: border-box; }
+        /* 數字線容器 */
+        .number-line-container { width: 100%; overflow-x: auto; padding: 10px 0; -webkit-overflow-scrolling: touch; }
+        .number-line { 
+            display: flex; 
+            align-items: flex-end; /* 關鍵：讓所有元素底部對齊 */
+            justify-content: center; 
+            min-width: max-content; 
+            padding: 0 20px; 
+            height: 80px; 
+        }
         
-        .input-group { display: flex; align-items: center; gap: 10px; width: 100%; }
-        input[type="text"] { flex: 1; padding: 15px; font-size: 28px; border-radius: 10px; border: 2px solid #ccc; text-align: center; font-weight: bold; }
-        .btn-submit { padding: 15px 35px; background: var(--magic-blue); color: white; border: none; border-radius: 10px; font-size: 22px; cursor: pointer; font-weight: bold; }
+        .slot { width: 12px; height: 40px; background: rgba(0,0,0,0.05); margin: 0 4px; border-radius: 3px; cursor: pointer; flex-shrink: 0; margin-bottom: 8px; }
+        
+        /* 修正後的小數點樣式 */
+        .decimal-point { 
+            width: 12px; 
+            height: 12px; 
+            background: var(--danger); 
+            border-radius: 50%; 
+            box-shadow: 0 0 5px var(--danger); 
+            z-index: 10; 
+            cursor: pointer; 
+            flex-shrink: 0;
+            margin: 0 4px 12px 4px; /* 底部邊距讓它對齊數字基線 */
+            position: relative;
+        }
+        /* 增加隱形點擊範圍，方便觸控 */
+        .decimal-point::after {
+            content: '';
+            position: absolute;
+            top: -15px; left: -15px; right: -15px; bottom: -15px;
+        }
 
-        @keyframes bounceSide { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
-        @keyframes bounceSideLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }
+        .digit { display: inline-block; width: 32px; text-align: center; font-size: 45px; font-weight: bold; line-height: 1; }
+        .digit.ghost { color: rgba(0, 0, 0, 0.1); }
+
+        .dialog-box { background: rgba(255, 255, 255, 0.8); width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #999; min-height: 60px; font-size: 16px; margin-bottom: 15px; }
+        .input-group { display: flex; align-items: center; gap: 8px; width: 100%; }
+        input[type="text"] { flex: 1; padding: 12px; font-size: 24px; border-radius: 8px; border: 2px solid #ccc; text-align: center; }
+        .btn-submit { padding: 12px 20px; background: var(--magic-blue); color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; font-weight: bold; }
+
+        .back-home-btn { margin-top: auto; margin-bottom: 20px; background: rgba(0,0,0,0.7); color: white; border: 1px solid white; padding: 8px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+
+        @media (max-width: 400px) {
+            .digit { width: 24px; font-size: 34px; }
+            .slot { width: 8px; }
+        }
     </style>
 </head>
 <body id="main-body" class="bg-home">
 
 <div id="home-screen" class="screen active-screen">
-    <div class="home-title">💎 小數冒險家 💎<br><span style="font-size:22px; color:white;">單位化聚大傳送</span></div>
+    <div class="home-title">💎 小數冒險家 💎<br><span style="font-size:18px; color:white;">單位化聚大傳送</span></div>
     <div class="island-grid">
         <button class="big-island-btn" onclick="startAdventure(0)">💰 金幣之森</button>
         <button class="big-island-btn" onclick="startAdventure(1)">❄️ 長度冰原</button>
         <button class="big-island-btn" onclick="startAdventure(2)">⛲ 容量噴泉</button>
         <button class="big-island-btn" onclick="startAdventure(3)">⛰️ 重量巨山</button>
-        <button class="big-island-btn" onclick="startAdventure(4)" style="grid-column: span 2; background: var(--gold);">🏛️ 終極神殿</button>
+        <button class="big-island-btn" onclick="startAdventure(4)" style="grid-column: span 1; background: var(--gold);">🏛️ 終極神殿</button>
     </div>
 </div>
 
 <div id="game-screen" class="screen">
     <div class="nav-bar" id="nav-bar"></div>
     <div class="info-bar">
-        <div id="island-title" style="font-weight:bold;"></div>
+        <div id="island-title" style="font-size: 14px;"></div>
         <div class="stat-box">得分: <span id="score-val" class="score-display">0</span></div>
         <div class="stat-box" id="timer-display">00:00</div>
     </div>
@@ -101,20 +135,23 @@
     <div class="game-main">
         <div class="quest-area">
             <span id="quest-text"></span>
-            <span id="hint-arrow" class="quest-arrow"></span>
+            <span id="hint-arrow" style="font-size: 30px;"></span>
         </div>
-        <div class="number-line" id="number-line"></div>
+        <div class="number-line-container">
+            <div class="number-line" id="number-line"></div>
+        </div>
         <div class="dialog-box" id="msg-box"></div>
         <div class="input-group">
-            <input type="text" id="answer-input" placeholder="？" autocomplete="off">
-            <span id="unit-tag" style="font-size:26px; font-weight:bold; min-width:70px;"></span>
+            <input type="text" id="answer-input" inputmode="decimal" placeholder="答案" autocomplete="off">
+            <span id="unit-tag" style="font-size:20px; font-weight:bold; min-width:50px;"></span>
             <button class="btn-submit" onclick="checkFinalAnswer()">提交</button>
         </div>
     </div>
-    <button onclick="goHome()" style="margin-top:20px; background:rgba(0,0,0,0.6); color:white; border:1px solid white; padding:5px 15px; border-radius:10px; cursor:pointer;">返回地圖</button>
+    <button class="back-home-btn" onclick="goHome()">返回地圖</button>
 </div>
 
 <script>
+    // JavaScript 部分保持不變，與之前的邏輯一致
     const islandData = [
         { name: "金幣之森", icon: "💰", units: [["元", "角", 10]] },
         { name: "長度冰原", icon: "❄️", units: [["公里", "米", 1000], ["米", "厘米", 100], ["厘米", "毫米", 10]] },
@@ -136,16 +173,14 @@
 
     function switchIsland(idx) {
         if (isTransitioning) return;
-        currentIslandIdx = idx;
-        islandProgress = 0;
+        currentIslandIdx = idx; islandProgress = 0;
         changeBackground(idx);
         updateNavBar();
         initQuestion();
     }
 
     function startAdventure(idx) {
-        currentIslandIdx = idx; 
-        islandProgress = 0;
+        currentIslandIdx = idx; islandProgress = 0;
         changeBackground(idx);
         document.getElementById('home-screen').classList.remove('active-screen');
         document.getElementById('game-screen').classList.add('active-screen');
@@ -176,7 +211,6 @@
         isTransitioning = false;
         let isl = islandData[currentIslandIdx];
         const isTemple = (currentIslandIdx === 4);
-        
         if (isTemple) isl = islandData[Math.floor(Math.random() * 4)];
         const unitPair = isl.units[Math.floor(Math.random() * isl.units.length)];
         const [bigU, smallU, rate] = unitPair;
@@ -196,7 +230,7 @@
 
         currentQuestion = { start, target, steps, isBigToSmall, sourceUnit, targetUnit, rate, isTemple };
         
-        document.getElementById('island-title').innerText = islandData[currentIslandIdx].icon + " " + islandData[currentIslandIdx].name + ` (題數: ${islandProgress + 1})`;
+        document.getElementById('island-title').innerText = `${islandData[currentIslandIdx].icon} 進度: ${islandProgress + 1}/7`;
         document.getElementById('quest-text').innerText = `${start.replace(/\.$/,"")} ${sourceUnit} = ______ ${targetUnit}`;
         document.getElementById('unit-tag').innerText = targetUnit;
         document.getElementById('answer-input').value = "";
@@ -205,16 +239,14 @@
         const arrowEl = document.getElementById('hint-arrow');
         if (showHint && islandProgress < 3) {
             arrowEl.innerText = isBigToSmall ? "➡️" : "⬅️";
-            arrowEl.style.animationName = isBigToSmall ? "bounceSide" : "bounceSideLeft";
             arrowEl.style.display = "inline-block";
         } else { arrowEl.style.display = "none"; }
 
         const msgBox = document.getElementById('msg-box');
         if (showHint) {
             const relation = isBigToSmall ? "大化小 (×)" : "小化大 (÷)";
-            const dir = isBigToSmall ? "右" : "左";
-            msgBox.innerHTML = `<b>[提示]</b> 這是 <span style="color:red;">${relation}</span>。<br>進率是 ${rate}，小數點應向 <b>${dir}</b> 移動 <b>${steps}</b> 位。`;
-        } else { msgBox.innerHTML = "🌟 <b>冒險挑戰：</b>此題無提示，分數加倍！加油！"; }
+            msgBox.innerHTML = `<b>[提示]</b> ${relation}，進率 ${rate}，小數點向 <b>${isBigToSmall?"右":"左"}</b> 移 <b>${steps}</b> 位。`;
+        } else { msgBox.innerHTML = "🌟 <b>冒險挑戰：</b>無提示題，分數加倍！"; }
 
         digits = currentQuestion.start.replace('.', '').split('');
         initialDotPos = currentQuestion.start.indexOf('.');
@@ -225,7 +257,7 @@
 
     function renderDigits() {
         const line = document.getElementById('number-line'); line.innerHTML = '';
-        for (let i = -4; i <= digits.length + 4; i++) {
+        for (let i = -3; i <= digits.length + 3; i++) {
             if (i === currentDotPos) {
                 const dot = document.createElement('div'); dot.className = 'decimal-point'; line.appendChild(dot);
             } else {
@@ -233,7 +265,7 @@
                 slot.onclick = () => { if(!isTransitioning){ currentDotPos = i; renderDigits(); } };
                 line.appendChild(slot);
             }
-            if (i < digits.length + 4) {
+            if (i < digits.length + 3) {
                 const span = document.createElement('span'); span.className = 'digit';
                 let val = "0", isSolid = false;
                 if (i >= 0 && i < digits.length) { val = digits[i]; isSolid = true; }
@@ -249,39 +281,20 @@
         if(isTransitioning) return;
         const userVal = document.getElementById('answer-input').value.trim();
         if (!userVal) return;
-        
-        // 修正驗證邏輯：
-        // 1. 數值必須完全相等 (220 == 220.0)
         const isValCorrect = parseFloat(userVal) === parseFloat(currentQuestion.target);
-        
-        // 2. 檢查小數點移動的「相對格數」是否正確，而不是絕對位置
         const moveDist = currentDotPos - initialDotPos;
         const expectedDist = currentQuestion.isBigToSmall ? currentQuestion.steps : -currentQuestion.steps;
         const isPosCorrect = moveDist === expectedDist;
-
         if (isValCorrect && isPosCorrect) {
             isTransitioning = true;
-            
-            let points = 0;
-            const hasHint = islandProgress < 5;
-            if (currentQuestion.isTemple) {
-                points = hasHint ? 20 : 30;
-            } else {
-                points = hasHint ? 10 : 20;
-            }
-            
+            let points = currentQuestion.isTemple ? (islandProgress < 5 ? 20 : 30) : (islandProgress < 5 ? 10 : 20);
             totalScore += points;
             document.getElementById('score-val').innerText = totalScore;
             say(`🌟 完美！+${points}分！`);
-            
             islandProgress++;
             setTimeout(handleProgression, 1200);
         } else { 
-            if (!isPosCorrect && isValCorrect) {
-                say("❌ 雖然答案數字對了，但小數點移動的格數不對喔！請再調整小數點。");
-            } else {
-                say("❌ 位置不對或數字有誤，再試一次！");
-            }
+            say(isValCorrect ? "❌ 數值對了，但小數點位置不對！" : "❌ 數值有誤，請檢查後再提交！");
         }
     }
 
@@ -289,12 +302,12 @@
         if (islandProgress >= 7 && currentIslandIdx < 4) {
             completedIslands.add(currentIslandIdx);
             if (completedIslands.size >= 4) {
-                say("🏆 你已完成所有基礎訓練！即將前往終極神殿挑戰！");
+                say("🏆 全島達成！進入終極神殿！");
                 setTimeout(() => switchIsland(4), 2000);
             } else {
                 let nextIdx = (currentIslandIdx + 1) % 4;
                 while(completedIslands.has(nextIdx)) nextIdx = (nextIdx + 1) % 4;
-                say(`🌈 此島任務達成！自動傳送到下一島嶼...`);
+                say(`🌈 自動前往下一個島嶼...`);
                 setTimeout(() => switchIsland(nextIdx), 2000);
             }
         } else {
