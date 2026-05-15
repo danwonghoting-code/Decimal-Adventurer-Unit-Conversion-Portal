@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>小數冒險家：精準四位版</title>
+    <title>小數冒險家：精準規範版</title>
     <style>
         :root {
             --gold: #FFD700;
@@ -67,7 +67,6 @@
             box-shadow: 0 0 5px var(--danger); z-index: 10; cursor: pointer; flex-shrink: 0;
             margin: 0 4px 12px 4px; position: relative;
         }
-        .decimal-point::after { content: ''; position: absolute; top: -15px; left: -15px; right: -15px; bottom: -15px; }
 
         .digit { display: inline-block; width: 32px; text-align: center; font-size: 45px; font-weight: bold; line-height: 1; }
         .digit.ghost { color: rgba(0, 0, 0, 0.1); }
@@ -85,7 +84,7 @@
 <body id="main-body" class="bg-home">
 
 <div id="home-screen" class="screen active-screen">
-    <div class="home-title">💎 小數冒險家 💎<br><span style="font-size:18px; color:white;">單位化聚大傳送</span></div>
+    <div class="home-title">💎 小數冒險家 💎<br><span style="font-size:18px; color:white;">單位化聚（題目及答案均不多於四位小數）</span></div>
     <div class="island-grid">
         <button class="big-island-btn" onclick="startAdventure(0)">💰 金幣之森</button>
         <button class="big-island-btn" onclick="startAdventure(1)">❄️ 長度冰原</button>
@@ -135,20 +134,6 @@
     let timerInterval = null, seconds = 0, isTransitioning = false;
     let completedIslands = new Set();
 
-    function changeBackground(idx) {
-        const body = document.getElementById('main-body');
-        body.className = '';
-        body.classList.add(idx === -1 ? 'bg-home' : `bg-island-${idx}`);
-    }
-
-    function switchIsland(idx) {
-        if (isTransitioning) return;
-        currentIslandIdx = idx; islandProgress = 0;
-        changeBackground(idx);
-        updateNavBar();
-        initQuestion();
-    }
-
     function startAdventure(idx) {
         currentIslandIdx = idx; islandProgress = 0;
         changeBackground(idx);
@@ -157,6 +142,12 @@
         updateNavBar();
         if (!timerInterval) resetTimer();
         initQuestion();
+    }
+
+    function changeBackground(idx) {
+        const body = document.getElementById('main-body');
+        body.className = '';
+        body.classList.add(idx === -1 ? 'bg-home' : `bg-island-${idx}`);
     }
 
     function goHome() { 
@@ -172,7 +163,7 @@
             const btn = document.createElement('button');
             btn.className = `nav-btn ${i === currentIslandIdx ? 'active' : ''}`;
             btn.innerHTML = `${isl.icon} ${isl.name}`;
-            btn.onclick = () => switchIsland(i);
+            btn.onclick = () => { if(!isTransitioning) { currentIslandIdx = i; islandProgress = 0; changeBackground(i); updateNavBar(); initQuestion(); } };
             bar.appendChild(btn);
         });
     }
@@ -180,71 +171,97 @@
     function initQuestion() {
         isTransitioning = false;
         let isl = islandData[currentIslandIdx];
-        const isTemple = (currentIslandIdx === 4);
-        if (isTemple) isl = islandData[Math.floor(Math.random() * 4)];
+        if (currentIslandIdx === 4) isl = islandData[Math.floor(Math.random() * 4)];
         
         const unitPair = isl.units[Math.floor(Math.random() * isl.units.length)];
         const [bigU, smallU, rate] = unitPair;
         const steps = Math.log10(rate);
+        const isBigToSmall = Math.random() > 0.5;
 
-        let start, target, sourceUnit, targetUnit;
-        let isBigToSmall = Math.random() > 0.5;
-        let forceDecimal = (islandProgress < 2);
-        
-        let baseNum;
-        if (forceDecimal) {
-            // 生成隨機小數，並限制在最多 4 位小數
-            baseNum = Number(((Math.random() * 8.9) + 1.1).toFixed(4));
+        let startVal, targetVal;
+
+        if (currentIslandIdx === 0) {
+            // 金幣島：角必須是整數
+            if (isBigToSmall) { // 元 -> 角
+                startVal = (Math.floor(Math.random() * 90) + 1) / 10; 
+                targetVal = Number((startVal * 10).toFixed(4)); 
+            } else { // 角 -> 元
+                startVal = Math.floor(Math.random() * 99) + 1; 
+                targetVal = Number((startVal / 10).toFixed(4));
+            }
         } else {
-            // 第三題起隨機整數或小數
-            baseNum = Math.random() > 0.5 ? Math.floor(Math.random() * 90) + 10 : Number(((Math.random() * 89) + 10).toFixed(4));
+            // 決定小數點位數 (最多4位)
+            let maxPlacesAllowed;
+            if (isBigToSmall) {
+                // 大化小（乘法）：題目可以有4位
+                maxPlacesAllowed = 4;
+            } else {
+                // 小化大（除法）：題目位數 + 位移 必須 <= 4
+                // 例如進率1000 (steps=3)，題目最多只能有 4-3=1 位小數
+                maxPlacesAllowed = Math.max(0, 4 - steps);
+            }
+
+            let decimalPlaces;
+            if (islandProgress < 2) {
+                // 前兩題：簡單點，1-2位小數，但不能超過允許上限
+                decimalPlaces = Math.min(maxPlacesAllowed, Math.random() > 0.5 ? 1 : 2);
+            } else {
+                // 後面題目：隨機
+                const rand = Math.random();
+                if (rand < 0.2) decimalPlaces = 0; 
+                else if (rand < 0.6) decimalPlaces = Math.min(maxPlacesAllowed, 3);
+                else decimalPlaces = maxPlacesAllowed;
+            }
+
+            let base = (Math.random() * 89) + 10;
+            startVal = Number(base.toFixed(decimalPlaces));
+            
+            if (isBigToSmall) {
+                targetVal = Number((startVal * rate).toFixed(4));
+            } else {
+                targetVal = Number((startVal / rate).toFixed(4));
+            }
         }
 
-        // --- 核心修正：計算後立即四捨五入到第 4 位小數，解決 19.999... 問題 ---
-        if (isBigToSmall) {
-            let res = baseNum * rate;
-            start = baseNum.toString();
-            target = Number(res.toFixed(4)).toString(); // 轉成 Number 再 toString 會自動去掉末尾 0
-            sourceUnit = bigU; targetUnit = smallU;
-        } else {
-            let res = baseNum / rate;
-            start = baseNum.toString();
-            target = Number(res.toFixed(4)).toString();
-            sourceUnit = smallU; targetUnit = bigU;
-        }
+        let startStr = startVal.toString();
+        let targetStr = targetVal.toString();
+        if (!startStr.includes('.')) startStr += ".";
 
-        if (!start.includes('.')) start += ".";
+        currentQuestion = { 
+            start: startStr, 
+            target: targetStr, 
+            steps, 
+            isBigToSmall, 
+            sourceUnit: isBigToSmall ? bigU : smallU, 
+            targetUnit: isBigToSmall ? smallU : bigU, 
+            rate 
+        };
 
-        currentQuestion = { start, target, steps, isBigToSmall, sourceUnit, targetUnit, rate, isTemple };
-        
         document.getElementById('island-title').innerText = `${islandData[currentIslandIdx].icon} 進度: ${islandProgress + 1}/7`;
-        document.getElementById('quest-text').innerText = `${start.replace(/\.$/,"")} ${sourceUnit} = ______ ${targetUnit}`;
-        document.getElementById('unit-tag').innerText = targetUnit;
+        document.getElementById('quest-text').innerText = `${startStr.replace(/\.$/,"")} ${currentQuestion.sourceUnit} = ______ ${currentQuestion.targetUnit}`;
+        document.getElementById('unit-tag').innerText = currentQuestion.targetUnit;
         document.getElementById('answer-input').value = "";
 
         const showHint = islandProgress < 5;
         const arrowEl = document.getElementById('hint-arrow');
-        if (showHint && islandProgress < 3) {
-            arrowEl.innerText = isBigToSmall ? "➡️" : "⬅️";
-            arrowEl.style.display = "inline-block";
-        } else { arrowEl.style.display = "none"; }
-
+        arrowEl.innerText = showHint && islandProgress < 3 ? (isBigToSmall ? "➡️" : "⬅️") : "";
+        
         const msgBox = document.getElementById('msg-box');
         if (showHint) {
-            const relation = isBigToSmall ? "大化小 (×)" : "小化大 (÷)";
-            msgBox.innerHTML = `<b>[提示]</b> ${relation}，進率 ${rate}，小數點向 <b>${isBigToSmall?"右":"左"}</b> 移 <b>${steps}</b> 位。`;
-        } else { msgBox.innerHTML = "🌟 <b>冒險挑戰：</b>無提示題，分數加倍！"; }
+            msgBox.innerHTML = `<b>[提示]</b> ${isBigToSmall?"大化小 (×)":"小化大 (÷)"}，進率 ${rate}，小數點向 <b>${isBigToSmall?"右":"左"}</b> 移 <b>${steps}</b> 位。`;
+        } else {
+            msgBox.innerHTML = "🌟 <b>冒險挑戰：</b>精準判斷位移，衝刺高分！";
+        }
 
         digits = currentQuestion.start.replace('.', '').split('');
         initialDotPos = currentQuestion.start.indexOf('.');
-        if (initialDotPos === -1) initialDotPos = digits.length;
         currentDotPos = initialDotPos;
         renderDigits();
     }
 
     function renderDigits() {
         const line = document.getElementById('number-line'); line.innerHTML = '';
-        for (let i = -4; i <= digits.length + 4; i++) {
+        for (let i = -5; i <= digits.length + 5; i++) {
             if (i === currentDotPos) {
                 const dot = document.createElement('div'); dot.className = 'decimal-point'; line.appendChild(dot);
             } else {
@@ -252,7 +269,7 @@
                 slot.onclick = () => { if(!isTransitioning){ currentDotPos = i; renderDigits(); } };
                 line.appendChild(slot);
             }
-            if (i < digits.length + 4) {
+            if (i < digits.length + 5) {
                 const span = document.createElement('span'); span.className = 'digit';
                 let val = "0", isSolid = false;
                 if (i >= 0 && i < digits.length) { val = digits[i]; isSolid = true; }
@@ -269,50 +286,43 @@
         const userValRaw = document.getElementById('answer-input').value.trim();
         if (!userValRaw) return;
         
-        // 1. 數值正確性 (容許極小誤差以防萬一)
-        const diff = Math.abs(parseFloat(userValRaw) - parseFloat(currentQuestion.target));
-        const isValCorrect = diff < 0.00001; 
+        // 1. 數值與格式嚴格對比
+        const isValCorrect = (parseFloat(userValRaw) === parseFloat(currentQuestion.target));
+        const isFormatCorrect = (userValRaw === Number(userValRaw).toString());
         
-        // 2. 嚴格格式 (不允許末尾多餘的 0)
-        // 使用 Number(字串).toString() 獲取標準最簡化寫法
-        const standardFormat = Number(userValRaw).toString();
-        const isFormatCorrect = (userValRaw === standardFormat);
-
-        // 3. 小數點視覺位置
+        // 2. 小數點位置對比
         const moveDist = currentDotPos - initialDotPos;
         const expectedDist = currentQuestion.isBigToSmall ? currentQuestion.steps : -currentQuestion.steps;
         const isPosCorrect = (moveDist === expectedDist);
 
         if (isValCorrect && isFormatCorrect && isPosCorrect) {
             isTransitioning = true;
-            let points = currentQuestion.isTemple ? (islandProgress < 5 ? 20 : 30) : (islandProgress < 5 ? 10 : 20);
-            totalScore += points;
+            totalScore += (islandProgress < 5 ? 10 : 20);
             document.getElementById('score-val').innerText = totalScore;
-            say(`🌟 完美！+${points}分！`);
+            say(`🌟 完美！答案與小數點移動完全正確！`);
             islandProgress++;
             setTimeout(handleProgression, 1200);
         } else { 
-            if (!isValCorrect) {
-                say("❌ 數值有誤，請檢查後再提交！");
-            } else if (!isFormatCorrect) {
-                say("❌ 數值正確，但請移除末尾多餘的「0」或無意義的小數點喔！");
-            } else if (!isPosCorrect) {
-                say("❌ 答案正確，但請將紅色小數點移到正確位置喔！");
-            }
+            if (!isValCorrect) say("❌ 數值計算錯誤，請再試一次！");
+            else if (!isFormatCorrect) say("❌ 數值正確，但請移除末尾多餘的「0」！");
+            else say("❌ 答案對了，但請將紅色小數點移到正確位置！");
         }
     }
 
     function handleProgression() {
-        if (islandProgress >= 7 && currentIslandIdx < 4) {
+        if (islandProgress >= 7) {
             completedIslands.add(currentIslandIdx);
-            if (completedIslands.size >= 4) {
-                say("🏆 全島達成！即將進入終極神殿！");
-                setTimeout(() => switchIsland(4), 2000);
+            if (completedIslands.size >= 4 && currentIslandIdx !== 4) {
+                say("🏆 恭喜！開啟終極神殿挑戰！");
+                setTimeout(() => startAdventure(4), 2000);
+            } else if (currentIslandIdx === 4) {
+                say("💎 傳說達成！你已經掌握了所有單位的奧祕！");
+                setTimeout(goHome, 3000);
             } else {
-                let nextIdx = (currentIslandIdx + 1) % 4;
-                while(completedIslands.has(nextIdx)) nextIdx = (nextIdx + 1) % 4;
-                say(`🌈 此島任務完成，傳送到下一島嶼...`);
-                setTimeout(() => switchIsland(nextIdx), 2000);
+                say("🌈 成功傳送到下一島嶼...");
+                let next = (currentIslandIdx + 1) % 4;
+                while(completedIslands.has(next)) next = (next + 1) % 4;
+                setTimeout(() => startAdventure(next), 2000);
             }
         } else {
             initQuestion();
