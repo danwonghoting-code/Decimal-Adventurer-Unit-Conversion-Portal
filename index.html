@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>小數冒險家：嚴格精簡版</title>
+    <title>小數冒險家：精準四位版</title>
     <style>
         :root {
             --gold: #FFD700;
@@ -26,7 +26,6 @@
             transition: background 0.8s ease-in-out;
         }
 
-        /* 背景圖片設定 */
         .bg-home { background: url('Gemini_Generated_Image_oblnfvoblnfvobln.png') no-repeat center center/cover; }
         .bg-island-0 { background: url('Gemini_Generated_Image_hgqcj2hgqcj2hgqc.png') no-repeat center center/cover; }
         .bg-island-1 { background: url('Gemini_Generated_Image_q6ayfvq6ayfvq6ay.png') no-repeat center center/cover; }
@@ -194,26 +193,27 @@
         
         let baseNum;
         if (forceDecimal) {
-            baseNum = (Math.floor(Math.random() * 900) + 100) / 100; 
+            // 生成隨機小數，並限制在最多 4 位小數
+            baseNum = Number(((Math.random() * 8.9) + 1.1).toFixed(4));
         } else {
-            baseNum = Math.random() > 0.5 ? Math.floor(Math.random() * 90) + 10 : (Math.floor(Math.random() * 900) + 100) / 100;
+            // 第三題起隨機整數或小數
+            baseNum = Math.random() > 0.5 ? Math.floor(Math.random() * 90) + 10 : Number(((Math.random() * 89) + 10).toFixed(4));
         }
 
+        // --- 核心修正：計算後立即四捨五入到第 4 位小數，解決 19.999... 問題 ---
         if (isBigToSmall) {
+            let res = baseNum * rate;
             start = baseNum.toString();
-            if (!start.includes('.')) start += ".";
-            // 存儲為最簡數字字串
-            target = (parseFloat(start) * rate).toString();
+            target = Number(res.toFixed(4)).toString(); // 轉成 Number 再 toString 會自動去掉末尾 0
             sourceUnit = bigU; targetUnit = smallU;
         } else {
-            start = (baseNum * rate).toString();
-            if (!start.includes('.')) start += ".";
-            target = (parseFloat(start) / rate).toString();
+            let res = baseNum / rate;
+            start = baseNum.toString();
+            target = Number(res.toFixed(4)).toString();
             sourceUnit = smallU; targetUnit = bigU;
         }
 
-        // 確保 target 變數本身就是最簡形式
-        target = Number(target).toString();
+        if (!start.includes('.')) start += ".";
 
         currentQuestion = { start, target, steps, isBigToSmall, sourceUnit, targetUnit, rate, isTemple };
         
@@ -244,7 +244,7 @@
 
     function renderDigits() {
         const line = document.getElementById('number-line'); line.innerHTML = '';
-        for (let i = -3; i <= digits.length + 3; i++) {
+        for (let i = -4; i <= digits.length + 4; i++) {
             if (i === currentDotPos) {
                 const dot = document.createElement('div'); dot.className = 'decimal-point'; line.appendChild(dot);
             } else {
@@ -252,7 +252,7 @@
                 slot.onclick = () => { if(!isTransitioning){ currentDotPos = i; renderDigits(); } };
                 line.appendChild(slot);
             }
-            if (i < digits.length + 3) {
+            if (i < digits.length + 4) {
                 const span = document.createElement('span'); span.className = 'digit';
                 let val = "0", isSolid = false;
                 if (i >= 0 && i < digits.length) { val = digits[i]; isSolid = true; }
@@ -269,15 +269,16 @@
         const userValRaw = document.getElementById('answer-input').value.trim();
         if (!userValRaw) return;
         
-        // 1. 數值正確性檢查 (含浮點數誤差處理)
+        // 1. 數值正確性 (容許極小誤差以防萬一)
         const diff = Math.abs(parseFloat(userValRaw) - parseFloat(currentQuestion.target));
-        const isValCorrect = diff < 0.0001; 
+        const isValCorrect = diff < 0.00001; 
         
-        // 2. 格式精確性檢查 (不允許末尾多餘的零或小數點)
-        // Number(userValRaw).toString() 會自動去掉多餘的 0
-        const isFormatCorrect = (userValRaw === Number(userValRaw).toString());
+        // 2. 嚴格格式 (不允許末尾多餘的 0)
+        // 使用 Number(字串).toString() 獲取標準最簡化寫法
+        const standardFormat = Number(userValRaw).toString();
+        const isFormatCorrect = (userValRaw === standardFormat);
 
-        // 3. 小數點移動位置檢查
+        // 3. 小數點視覺位置
         const moveDist = currentDotPos - initialDotPos;
         const expectedDist = currentQuestion.isBigToSmall ? currentQuestion.steps : -currentQuestion.steps;
         const isPosCorrect = (moveDist === expectedDist);
@@ -294,9 +295,9 @@
             if (!isValCorrect) {
                 say("❌ 數值有誤，請檢查後再提交！");
             } else if (!isFormatCorrect) {
-                say("❌ 數值對了，但請不要輸入末尾多餘的「0」或無意義的小數點喔！");
+                say("❌ 數值正確，但請移除末尾多餘的「0」或無意義的小數點喔！");
             } else if (!isPosCorrect) {
-                say("❌ 答案正確，但圖表上的小數點位置不對喔！");
+                say("❌ 答案正確，但請將紅色小數點移到正確位置喔！");
             }
         }
     }
