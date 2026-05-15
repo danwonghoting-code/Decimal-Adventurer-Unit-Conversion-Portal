@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>小數冒險家：難度階梯版</title>
+    <title>小數冒險家：嚴格精簡版</title>
     <style>
         :root {
             --gold: #FFD700;
@@ -26,6 +26,7 @@
             transition: background 0.8s ease-in-out;
         }
 
+        /* 背景圖片設定 */
         .bg-home { background: url('Gemini_Generated_Image_oblnfvoblnfvobln.png') no-repeat center center/cover; }
         .bg-island-0 { background: url('Gemini_Generated_Image_hgqcj2hgqcj2hgqc.png') no-repeat center center/cover; }
         .bg-island-1 { background: url('Gemini_Generated_Image_q6ayfvq6ayfvq6ay.png') no-repeat center center/cover; }
@@ -187,33 +188,32 @@
         const [bigU, smallU, rate] = unitPair;
         const steps = Math.log10(rate);
 
-        // --- 難度控制邏輯 ---
         let start, target, sourceUnit, targetUnit;
         let isBigToSmall = Math.random() > 0.5;
-
-        // 前兩題強制生成帶有小數點的題目
         let forceDecimal = (islandProgress < 2);
         
         let baseNum;
         if (forceDecimal) {
-            // 生成帶有 1-2 位小數的數字
-            baseNum = (Math.floor(Math.random() * 900) + 100) / 100; // 例如 1.23 ~ 9.99
+            baseNum = (Math.floor(Math.random() * 900) + 100) / 100; 
         } else {
-            // 第三題起隨機整數或小數
             baseNum = Math.random() > 0.5 ? Math.floor(Math.random() * 90) + 10 : (Math.floor(Math.random() * 900) + 100) / 100;
         }
 
         if (isBigToSmall) {
             start = baseNum.toString();
             if (!start.includes('.')) start += ".";
+            // 存儲為最簡數字字串
             target = (parseFloat(start) * rate).toString();
             sourceUnit = bigU; targetUnit = smallU;
         } else {
-            start = (baseNum * rate).toString(); // 確保小化大時也有小數點機率
+            start = (baseNum * rate).toString();
             if (!start.includes('.')) start += ".";
             target = (parseFloat(start) / rate).toString();
             sourceUnit = smallU; targetUnit = bigU;
         }
+
+        // 確保 target 變數本身就是最簡形式
+        target = Number(target).toString();
 
         currentQuestion = { start, target, steps, isBigToSmall, sourceUnit, targetUnit, rate, isTemple };
         
@@ -233,7 +233,7 @@
         if (showHint) {
             const relation = isBigToSmall ? "大化小 (×)" : "小化大 (÷)";
             msgBox.innerHTML = `<b>[提示]</b> ${relation}，進率 ${rate}，小數點向 <b>${isBigToSmall?"右":"左"}</b> 移 <b>${steps}</b> 位。`;
-        } else { msgBox.innerHTML = "🌟 <b>冒險挑戰：</b>第 6、7 題為加分題，此題無提示！"; }
+        } else { msgBox.innerHTML = "🌟 <b>冒險挑戰：</b>無提示題，分數加倍！"; }
 
         digits = currentQuestion.start.replace('.', '').split('');
         initialDotPos = currentQuestion.start.indexOf('.');
@@ -266,13 +266,23 @@
 
     function checkFinalAnswer() {
         if(isTransitioning) return;
-        const userVal = document.getElementById('answer-input').value.trim();
-        if (!userVal) return;
-        const isValCorrect = parseFloat(userVal) === parseFloat(currentQuestion.target);
+        const userValRaw = document.getElementById('answer-input').value.trim();
+        if (!userValRaw) return;
+        
+        // 1. 數值正確性檢查 (含浮點數誤差處理)
+        const diff = Math.abs(parseFloat(userValRaw) - parseFloat(currentQuestion.target));
+        const isValCorrect = diff < 0.0001; 
+        
+        // 2. 格式精確性檢查 (不允許末尾多餘的零或小數點)
+        // Number(userValRaw).toString() 會自動去掉多餘的 0
+        const isFormatCorrect = (userValRaw === Number(userValRaw).toString());
+
+        // 3. 小數點移動位置檢查
         const moveDist = currentDotPos - initialDotPos;
         const expectedDist = currentQuestion.isBigToSmall ? currentQuestion.steps : -currentQuestion.steps;
-        const isPosCorrect = moveDist === expectedDist;
-        if (isValCorrect && isPosCorrect) {
+        const isPosCorrect = (moveDist === expectedDist);
+
+        if (isValCorrect && isFormatCorrect && isPosCorrect) {
             isTransitioning = true;
             let points = currentQuestion.isTemple ? (islandProgress < 5 ? 20 : 30) : (islandProgress < 5 ? 10 : 20);
             totalScore += points;
@@ -281,7 +291,13 @@
             islandProgress++;
             setTimeout(handleProgression, 1200);
         } else { 
-            say(isValCorrect ? "❌ 數值對了，但小數點位置不對！" : "❌ 數值有誤，請檢查後再提交！");
+            if (!isValCorrect) {
+                say("❌ 數值有誤，請檢查後再提交！");
+            } else if (!isFormatCorrect) {
+                say("❌ 數值對了，但請不要輸入末尾多餘的「0」或無意義的小數點喔！");
+            } else if (!isPosCorrect) {
+                say("❌ 答案正確，但圖表上的小數點位置不對喔！");
+            }
         }
     }
 
